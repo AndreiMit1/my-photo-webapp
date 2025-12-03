@@ -10,16 +10,17 @@
     .up { background:#2ecc71; color:#fff; }
     .down { background:#e74c3c; color:#fff; }
   </style>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
   <img src="./random_line_plot.png" alt="График">
   <button class="up" onclick="sendChoice('up')">Цена растёт 📈</button>
   <button class="down" onclick="sendChoice('down')">Цена падает 📉</button>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     function sendChoice(choice){Telegram.WebApp.sendData(choice)}
   </script>
 </body>
 </html>
+
 
 
