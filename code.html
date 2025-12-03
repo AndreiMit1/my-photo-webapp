@@ -16,8 +16,15 @@
   <img src="./random_line_plot.png" alt="График">
   <button class="up" onclick="Telegram.WebApp.sendData('up')">Цена растёт 📈</button>
   <button class="down" onclick="Telegram.WebApp.sendData('down')">Цена падает 📉</button>
+  <script>
+    function sendChoice(choice) {
+      console.log("Кнопка нажата:", choice);   // проверка в консоли
+      Telegram.WebApp.sendData(choice);        // отправка данных в бота
+    }
+  </script>
 </body>
 </html>
+
 
 
 
