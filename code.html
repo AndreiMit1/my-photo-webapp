@@ -13,7 +13,11 @@
 </head>
 <body>
   <img src="./random_line_plot.png" alt="График">
-  <button class="up" onclick="alert('Цена растёт 📈')">Цена растёт 📈</button>
-  <button class="down" onclick="alert('Цена падает 📉')">Цена падает 📉</button>
+  <button class="up" onclick="sendChoice('up')">Цена растёт 📈</button>
+  <button class="down" onclick="sendChoice('down')">Цена падает 📉</button>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    function sendChoice(choice){Telegram.WebApp.sendData(choice)}
+  </script>
 </body>
 </html>
