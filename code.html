@@ -18,14 +18,14 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     function sendValue(val) {
-      // Отправляем данные в Telegram
       Telegram.WebApp.sendData(val.toString());
     }
   </script>
-  <button class="up" onclick="Telegram.WebApp.sendData('up')">Цена растёт 📈</button>
-  <button class="down" onclick="Telegram.WebApp.sendData('down')">Цена падает 📉</button>
+  <button class="up" onclick="sendValue(1)">Цена растёт 📈</button>
+  <button class="down" onclick="sendValue(0)">Цена падает 📉</button>
 </body>
 </html>
+
 
 
 
