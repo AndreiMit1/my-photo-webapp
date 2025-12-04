@@ -3,11 +3,32 @@ import sqlite3
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
+import numpy as np
+import matplotlib.pyplot as plt
+import random
 
 API_TOKEN = ""
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
+
+#генерация графика
+def generating_plot():
+    n = 100
+    phi = random.choice([0.3, 0.5, 0.7])
+    sigma = 0.5
+    epsilon = np.random.normal(0, sigma, n)
+    X = np.zeros(n)
+    X[0] = epsilon[0]
+    
+    for t in range(1, n):
+        X[t] = phi * X[t-1] + epsilon[t]
+
+    plt.figure(figsize=(19.2, 10.8), dpi=100)
+    plt.plot(X)
+    plt.text(0.02, 0.98, "p=" + str(phi), fontsize=24)
+    plt.savefig('ar1_process.png')
+    plt.close()
 
 
 #SQL:
@@ -35,28 +56,20 @@ def insert_result(user_id: int, choice: str):
     db.close()
     print(user_id, price_up, price_down)
     
-def get_webapp_keyboard() -> ReplyKeyboardMarkup:
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [
-                KeyboardButton(
-                    text="Открыть график",
-                    web_app=WebAppInfo(
-                        url="https://andreimit1.github.io/my-photo-webapp/code.html"  
-                    ),
-                )
-            ]
-        ],
-        resize_keyboard=True,
-    )
+#кнопка запуска апп и генерация графика
+def get_webapp_keyboard():
+    generating_plot()
+    button = KeyboardButton(text="Открыть график", web_app=WebAppInfo(url="https://andreimit1.github.io/my-photo-webapp/code.html"))
+    return ReplyKeyboardMarkup(keyboard=[[button]], resize_keyboard=True) 
 
 
 @dp.message(Command("start"))  
 async def cmd_start(message: types.Message):
     await message.answer(
-        "Нажми кнопку, чтобы открыть мини-приложение",
+        "Нажми кнопку, чтобы открыть мини-приложение + график сгенерирован",
         reply_markup=get_webapp_keyboard()
     )
+   
 
 
 @dp.message(F.web_app_data)     
@@ -79,6 +92,8 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+
 
 
 
