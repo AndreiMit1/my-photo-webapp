@@ -8,7 +8,7 @@ from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 
 API_TOKEN = "8592559811:AAH29ce0hb8CQCuT7E_EIY64Nwoi5CILQX8"  # 🔹 вставь сюда токен бота
-BASE_WEBAPP_URL = "https://b15a68ce.my-photo-webapp.pages.dev/"  # 🔹 твой Cloudflare Pages URL
+BASE_WEBAPP_URL = "https://7ec1669a.my-photo-webapp.pages.dev/"  # 🔹 твой Cloudflare Pages URL
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
@@ -118,5 +118,6 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
