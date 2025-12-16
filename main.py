@@ -6,7 +6,7 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 import numpy as np
 import matplotlib.pyplot as plt
 import random
-
+#12344567
 API_TOKEN = ""
 
 bot = Bot(token=API_TOKEN)
