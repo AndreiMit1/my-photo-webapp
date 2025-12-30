@@ -110,12 +110,21 @@
   <!-- Telegram WebApp JS SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
-    // Сообщаем Telegram, что web-app готов и просим максимум места по высоте
-    Telegram.WebApp.ready();
-    Telegram.WebApp.expand();
-    Telegram.WebApp.setHeaderColor("dark");
-    Telegram.WebApp.setBackgroundColor("#111");
-    Telegram.WebApp.setViewportHeight(1200);
+    window.addEventListener('load', () => {
+      // Инициализация Telegram WebApp
+      if (window.Telegram && window.Telegram.WebApp) {
+
+
+        // Сообщаем Telegram, что web-app готов и просим максимум места по высоте
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
+        Telegram.WebApp.setHeaderColor("dark");
+        Telegram.WebApp.setBackgroundColor("#111");
+        Telegram.WebApp.setViewportHeight(1200);
+
+        Telegram.WebApp.mainButton.hide();
+       }
+     });
   </script>
 </head>
 <body>
