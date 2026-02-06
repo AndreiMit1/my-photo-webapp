@@ -259,24 +259,41 @@
       ctx.lineTo(canvas.width - pad, canvas.height - pad);
       ctx.stroke();
 
-      // Реальный процесс
+      // 4.1. Реальный процесс (синяя линия) — рисуем только открытую часть
       ctx.strokeStyle = "#4b6cff";
       ctx.lineWidth = 2;
       ctx.beginPath();
       for (let i = 0; i <= maxRealIndex; i++) {
-        const x = xCoord(i);
+        const x = xCoord(data[i]);
         const y = yScale(data[i]);
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       }
       ctx.stroke();
 
-      // Текущая зона прогноза
+      // 4.2. Текущая зона прогноза: одна вертикальная полоса
       if (currentStep < EXTRA_STEPS) {
-        const targetIndex = BASE_N + currentStep;
+        const targetIndex = BASE_N + currentStep;  // куда делаем прогноз сейчас
         const xTarget = xCoord(targetIndex);
-        const zoneWidth = 40;
 
-        // Левая и правая границы — зелёные пунктирные линии
+        const zoneWidth = 40; // ширина кликабельной зоны (в пикселях)
+
+        // Полупрозрачный прямоугольник — "зона клика"
+        ctx.fillStyle = "rgba(46, 204, 113, 0.06)";
+        ctx.fillRect(xTarget - zoneWidth, pad, zoneWidth * 2, H);
+
+        // Пунктирная линия в центре зоны
+        const defaultLineX = xTarget;
+        const lineX = (currentLineX !== null) ? currentLineX : defaultLineX;
+
+        ctx.strokeStyle = "#2ecc71";
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        ctx.moveTo(xTarget, pad);
+        ctx.lineTo(xTarget, canvas.height - pad);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Нарисуем границы зоны клика (зелёные линии)
         ctx.strokeStyle = "#2ecc71";
         ctx.setLineDash([6, 6]);
         ctx.beginPath();
@@ -287,7 +304,7 @@
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Линия клика пользователя — серая
+        // Нарисуем серую линию там, где кликнул пользователь
         if (currentLineX !== null) {
           ctx.strokeStyle = "#888";
           ctx.lineWidth = 1.5;
@@ -297,21 +314,23 @@
           ctx.stroke();
         }
 
-        // Подпись
+        // Подпись "кликни здесь"
         ctx.fillStyle = "#000";
         ctx.font = "14px system-ui";
         ctx.fillText("Выбери высоту здесь →", xTarget - 140, pad + 24);
       }
 
-      // Подпись phi
+      // 4.3. Подпись параметра phi
       ctx.fillStyle = "#000";
       ctx.font = "20px system-ui";
       ctx.fillText("AR(1), φ = " + phi.toFixed(2), pad, pad - 10);
 
-      // Рисуем все прогнозы крестиками
+      // 4.4. Рисуем все прогнозные крестики P1, P2, ...
       for (const p of predictions) {
         const x = xCoord(p.t);
         const y = yScale(p.y_pred);
+
+        // Крестик в цвете "оранжевый"
         ctx.strokeStyle = "#e67e22";
         ctx.lineWidth = 2;
         const size = 7;
@@ -321,11 +340,14 @@
         ctx.moveTo(x - size, y + size);
         ctx.lineTo(x + size, y - size);
         ctx.stroke();
+
+        // Подпись P1, P2, ...
         ctx.font = "12px system-ui";
         ctx.fillStyle = "#e67e22";
         ctx.fillText(`P${p.step + 1}`, x + 6, y - 8);
       }
     }
+
 
     /********************************************************************
      *                 5. БЕГУНОК <-> СКРОЛЛ
