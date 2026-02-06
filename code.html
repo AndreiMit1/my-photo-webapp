@@ -111,11 +111,42 @@
     Telegram.WebApp.requestFullscreen();
     Telegram.WebApp.setHeaderColor("dark");
     Telegram.WebApp.setBackgroundColor("#111");
-    Telegram.WebApp.setViewportHeight(1200);
+    
   
   </script>
 </head>
 <body>
+  <button id="normalSizeBtn" style="
+    position: fixed;
+    top: 8px;
+    right: 8px;
+    z-index: 999;
+    padding: 6px 12px;
+    font-weight: 600;
+    border-radius: 6px;
+    background: #3498db;
+    color: white;
+    border: none;
+    cursor: pointer;
+  ">
+    ⬇ Размер
+  </button>
+
+  <script>
+    const tg = Telegram.WebApp;
+
+    document.getElementById("normalSizeBtn").onclick = () => {
+      // 1) Выйти из fullscreen, если он включён
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+
+      // 2) Установить обычный размер Telegram (как было до fullscreen)
+      tg.expand();   // это максимально «обычный» размер окна Telegram
+    };
+  </script>
+
+
   <!-- Область со скроллом и самим графиком -->
   <div class="scroll-wrapper" id="scrollWrapper">
     <canvas id="plot"></canvas>
