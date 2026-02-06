@@ -3,6 +3,7 @@ import sqlite3
 import random
 import urllib.parse
 
+
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
@@ -12,6 +13,7 @@ BASE_WEBAPP_URL = "https://my-photo-webapp.pages.dev/code.html"  # 🔹 твой
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
+
 
 # =========================
 #   БАЗА ДАННЫХ
