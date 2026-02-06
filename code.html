@@ -259,7 +259,7 @@
       ctx.lineTo(canvas.width - pad, canvas.height - pad);
       ctx.stroke();
 
-      // Реальный процесс
+      // 4.1. Реальный процесс (синяя линия) — рисуем только открытую часть
       ctx.strokeStyle = "#4b6cff";
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -270,49 +270,46 @@
       }
       ctx.stroke();
 
-      // Зона прогноза
+      // 4.2. Текущая зона прогноза: одна вертикальная полоса
       if (currentStep < EXTRA_STEPS) {
-        const targetIndex = BASE_N + currentStep;
+        const targetIndex = BASE_N + currentStep;  // куда делаем прогноз сейчас
         const xTarget = xCoord(targetIndex);
-        const zoneWidth = 60;
-        const leftBound = xTarget - zoneWidth / 2;
-        const rightBound = xTarget + zoneWidth / 2;
 
-        // Полупрозрачная зона
+        const zoneWidth = 60; // ширина подсвеченной зоны (в пикселях)
+
+        // Полупрозрачный прямоугольник — "зона клика"
         ctx.fillStyle = "rgba(46, 204, 113, 0.06)";
-        ctx.fillRect(leftBound, pad, zoneWidth, H);
+        ctx.fillRect(xTarget - zoneWidth / 2, pad, zoneWidth, H);
 
-        // Две границы зоны — зелёные линии
+        // Пунктирная линия в центре зоны
+        const defaultLineX = xTarget;
+        const lineX = (currentLineX !== null) ? currentLineX : defaultLineX;
+
         ctx.strokeStyle = "#2ecc71";
-        ctx.setLineDash([6,6]);
+        ctx.setLineDash([6, 6]);
         ctx.beginPath();
-        ctx.moveTo(leftBound, pad);
-        ctx.lineTo(leftBound, canvas.height - pad);
-        ctx.moveTo(rightBound, pad);
-        ctx.lineTo(rightBound, canvas.height - pad);
+        ctx.moveTo(lineX, pad);
+        ctx.lineTo(lineX, canvas.height - pad);
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Серый вертикальный маркер клика
-        if (typeof currentLineX === "number") {
-          ctx.strokeStyle = "#7f8c8d";
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(currentLineX, pad);
-          ctx.lineTo(currentLineX, canvas.height - pad);
-          ctx.stroke();
-        }
+        // Подпись "кликни здесь"
+        ctx.fillStyle = "#000";
+        ctx.font = "14px system-ui";
+        ctx.fillText("Выбери высоту здесь →", xTarget - 140, pad + 24);
       }
 
-      // Подписи и крестики
+      // 4.3. Подпись параметра phi
       ctx.fillStyle = "#000";
       ctx.font = "20px system-ui";
       ctx.fillText("AR(1), φ = " + phi.toFixed(2), pad, pad - 10);
 
+      // 4.4. Рисуем все прогнозные крестики P1, P2, ...
       for (const p of predictions) {
         const x = xCoord(p.t);
         const y = yScale(p.y_pred);
 
+        // Крестик в цвете "оранжевый"
         ctx.strokeStyle = "#e67e22";
         ctx.lineWidth = 2;
         const size = 7;
@@ -323,11 +320,14 @@
         ctx.lineTo(x + size, y - size);
         ctx.stroke();
 
+        // Подпись P1, P2, ...
         ctx.font = "12px system-ui";
         ctx.fillStyle = "#e67e22";
         ctx.fillText(`P${p.step + 1}`, x + 6, y - 8);
       }
     }
+
+    // Первый рендер
     drawSeries();
 
 
@@ -397,39 +397,43 @@
      *                 7. ОБРАБОТКА КЛИКА ПО ГРАФИКУ
      ********************************************************************/
 
-    /********************************************************************
- *                 7. ОБРАБОТКА КЛИКА ПО ГРАФИКУ (НОВАЯ)
- ********************************************************************/
 
     canvas.addEventListener("click", function (evt) {
+      // Если все прогнозы уже сделаны — клики больше не обрабатываем
       if (currentStep >= EXTRA_STEPS) {
         statusDiv.textContent = "Все 10 прогнозов уже сделаны. Нажми «Отправить результаты».";
         return;
       }
 
+      // Координаты клика в системе canvas
       const rect = canvas.getBoundingClientRect();
-      const xClick = evt.clientX - rect.left;
-      const yClick = evt.clientY - rect.top;
+      const x = evt.clientX - rect.left;
+      const y = evt.clientY - rect.top;
 
+      // Текущий индекс времени, за который делаем прогноз (строго один шаг вперёд)
       const targetIndex = BASE_N + currentStep;
+      const xTarget = xCoord(targetIndex);
 
-      // Левая граница — конец уже видимой реальности
-      const xLeft = xCoord(maxRealIndex);
-      // Правая граница — допустим, зона клика 40 пикселей вправо
-      const CLICK_ZONE_WIDTH = 40;
-      const xRight = xLeft + CLICK_ZONE_WIDTH;
+      const zoneWidth = 60;                // ширина кликабельной зоны
+      const halfZone = zoneWidth / 2;
 
-      // Проверка клика — если за пределами зоны
-      if (xClick < xLeft || xClick > xRight) {
-        statusDiv.textContent = "Кликни в зелёной зоне справа от последней точки.";
+      // Проверяем, что клик произошёл в подсвеченной полосе вокруг линии
+      if (x < xTarget - halfZone || x > xTarget + halfZone) {
+        statusDiv.textContent = "Пожалуйста, кликни в зелёной полосе вокруг пунктирной линии (выбираем только высоту точки).";
         return;
       }
 
-      // Переводим координату Y клика в значение ряда
-      const yPred = invYScale(yClick);
+      // Переводим координату Y клика в значение ряда (прогноз студента)
+      const yPred = invYScale(y);
       const yTrue = data[targetIndex];
+
+      // Для "рост/падение" сравниваем с предыдущей открытой точкой
       const prevIndex = Math.max(0, targetIndex - 1);
       const up = yPred > data[prevIndex];
+
+      // Обновляем "открытую" реальность: теперь студент видит реальные данные до targetIndex
+      const oldMaxRealIndex = maxRealIndex;
+      maxRealIndex = targetIndex;
 
       // Сохраняем прогноз
       predictions.push({
@@ -442,65 +446,33 @@
 
       currentStep += 1;
 
-      // Анимация линии до клика
-      const fromX = (currentLineX !== null) ? currentLineX : xCoord(maxRealIndex);
-      const toX = xClick;
+      // Позиция линии ДО и ПОСЛЕ (идём всегда на один шаг вправо)
+      const fromX = (currentLineX !== null) ? currentLineX : xCoord(oldMaxRealIndex + 1);
+      const toX   = xTarget;
 
-      // Обновляем видимую реальность после клика
-      const oldMaxRealIndex = maxRealIndex;
-      maxRealIndex = targetIndex;
-
+      // Функция, которая обновит текстовое описание после анимации
       const nextStepText = () => {
-        // Обновляем подсказку
         if (currentStep < EXTRA_STEPS) {
-          statusDiv.textContent = 
-            `Прогноз ${currentStep} сделан. Клик: t = ${targetIndex}, y ≈ ${yPred.toFixed(2)}. ` +
-            `Следующий прогноз (${currentStep + 1} из ${EXTRA_STEPS}).`;
+          statusDiv.textContent =
+            `Прогноз ${currentStep} сделан. Сейчас t = ${targetIndex}, ` +
+            `твой y ≈ ${yPred.toFixed(2)}, истинное y ≈ ${yTrue.toFixed(2)}. ` +
+            `Сделай прогноз ${currentStep + 1} из ${EXTRA_STEPS} (верх/низ в следующей зелёной полосе).`;
         } else {
+          // После последнего прогноза открываем весь ряд до конца
           maxRealIndex = TOTAL_N - 1;
           drawSeries();
           statusDiv.textContent =
-            `Все ${EXTRA_STEPS} прогнозов сделаны. Последняя точка: t = ${targetIndex}, y ≈ ${yPred.toFixed(2)}. ` +
+            `Все ${EXTRA_STEPS} прогнозов сделаны. Последняя точка: t = ${targetIndex}, ` +
+            `твой y ≈ ${yPred.toFixed(2)}, истинное y ≈ ${yTrue.toFixed(2)}. ` +
             `Теперь нажми «Отправить результаты».`;
           sendBtn.disabled = false;
           sendBtn.classList.add("enabled");
         }
       };
 
-  // Запускаем анимацию
-  animateLine(fromX, toX, 250, nextStepText);
-
-  // Запоминаем текущую линию как xClick
-  currentLineX = xClick;
-
-  // Перерисовываем график сразу с новой зоной клика
-  drawSeries();
-
-  // Рисуем две зелёные границы и крестик клика
-  ctx.strokeStyle = "#2ecc71";
-  ctx.setLineDash([6, 6]);
-  ctx.beginPath();
-  ctx.moveTo(xLeft, pad);
-  ctx.lineTo(xLeft, canvas.height - pad);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(xRight, pad);
-  ctx.lineTo(xRight, canvas.height - pad);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  // Рисуем крестик в точке клика
-  const size = 7;
-  ctx.strokeStyle = "#e67e22";
-  ctx.beginPath();
-  ctx.moveTo(xClick - size, yClick - size);
-  ctx.lineTo(xClick + size, yClick + size);
-  ctx.moveTo(xClick - size, yClick + size);
-  ctx.lineTo(xClick + size, yClick - size);
-  ctx.stroke();
-});
-
+      // Запускаем анимацию движения линии
+      animateLine(fromX, toX, 250, nextStepText);
+    });
 
     /********************************************************************
      *                 8. ОТПРАВКА РЕЗУЛЬТАТОВ В БОТА
