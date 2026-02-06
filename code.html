@@ -108,7 +108,6 @@
     // Сообщаем Telegram, что web-app готов и просим максимум места по высоте
     Telegram.WebApp.ready();
     Telegram.WebApp.expand();
-    // Telegram.WebApp.requestFullscreen();
     Telegram.WebApp.setHeaderColor("dark");
     Telegram.WebApp.setBackgroundColor("#111");
     
@@ -415,13 +414,31 @@
       const xTarget = xCoord(targetIndex);
 
       const zoneWidth = 60;                // ширина кликабельной зоны
+      const extraRight = 40;
       const halfZone = zoneWidth / 2;
 
-      // Проверяем, что клик произошёл в подсвеченной полосе вокруг линии
-      if (x < xTarget - halfZone || x > xTarget + halfZone) {
-        statusDiv.textContent = "Пожалуйста, кликни в зелёной полосе вокруг пунктирной линии (выбираем только высоту точки).";
+      const leftLineX  = xTarget - halfZone;
+      const rightLineX = xTarget + halfZone + extraRight;
+
+
+      // Проверка клика
+      if (x < leftLineX || x > rightLineX) {
+        statusDiv.textContent = "Клик вне зоны! Кликайте между зелёными линиями.";
         return;
       }
+      
+      // Рисуем две пунктирные линии для визуальной зоны клика
+      currentLineX = x;  // временно, чтобы показать линию там, где кликнули
+      drawSeries();
+      ctx.strokeStyle = "#2ecc71";
+      ctx.setLineDash([6,6]);
+      ctx.beginPath();
+      ctx.moveTo(leftLineX, pad);
+      ctx.lineTo(leftLineX, canvas.height - pad);
+      ctx.moveTo(rightLineX, pad);
+      ctx.lineTo(rightLineX, canvas.height - pad);
+      ctx.stroke();
+      ctx.setLineDash([]);
 
       // Переводим координату Y клика в значение ряда (прогноз студента)
       const yPred = invYScale(y);
