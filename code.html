@@ -123,13 +123,8 @@
   </div>
 
   <script>
-    document.getElementById("fullscreenBtn").onclick = () => {
-      if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
-    };
-
-    document.getElementById("normalBtn").onclick = () => {
-      if (document.fullscreenElement) document.exitFullscreen?.();
-    };
+    fullscreenBtn.onclick = () => Telegram.WebApp.requestFullscreen();
+    normalBtn.onclick = () => Telegram.WebApp.collapse();
   </script>
 
 
