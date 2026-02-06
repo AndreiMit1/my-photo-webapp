@@ -108,7 +108,7 @@
     // Сообщаем Telegram, что web-app готов и просим максимум места по высоте
     Telegram.WebApp.ready();
     Telegram.WebApp.expand();
-    Telegram.WebApp.requestFullscreen();
+    // Telegram.WebApp.requestFullscreen();
     Telegram.WebApp.setHeaderColor("dark");
     Telegram.WebApp.setBackgroundColor("#111");
     
@@ -116,33 +116,19 @@
   </script>
 </head>
 <body>
-  <button id="normalSizeBtn" style="
-    position: fixed;
-    top: 80px;
-    right: 20px;
-    z-index: 999;
-    padding: 6px 12px;
-    font-weight: 600;
-    border-radius: 6px;
-    background: #3498db;
-    color: white;
-    border: none;
-    cursor: pointer;
-  ">
-    ⬇ Размер
-  </button>
+    <!-- Кнопки управления размером -->
+  <div id="controls" style="position: fixed; top: 50%; right: 10px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px;">
+    <button id="fullscreenBtn" style="padding:10px 16px; background:#3498db; color:white; border:1px solid #fff; border-radius:6px; cursor:pointer;">Fullscreen</button>
+    <button id="normalBtn" style="padding:10px 16px; background:#3498db; color:white; border:1px solid #fff; border-radius:6px; cursor:pointer;">Normal</button>
+  </div>
 
   <script>
-    const tg = Telegram.WebApp;
+    document.getElementById("fullscreenBtn").onclick = () => {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+    };
 
-    document.getElementById("normalSizeBtn").onclick = () => {
-      // 1) Выйти из fullscreen, если он включён
-      if (document.fullscreenElement) {
-        document.exitFullscreen();
-      }
-
-      // 2) Установить обычный размер Telegram (как было до fullscreen)
-      tg.expand();   // это максимально «обычный» размер окна Telegram
+    document.getElementById("normalBtn").onclick = () => {
+      if (document.fullscreenElement) document.exitFullscreen?.();
     };
   </script>
 
