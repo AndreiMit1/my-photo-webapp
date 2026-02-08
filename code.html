@@ -166,18 +166,7 @@
   <div class="hint" id="status">
     Пролистай график вправо и кликни в подсвеченной полосе, чтобы сделать первый прогноз.
   </div>
-  <script>
-    
-    const statusDiv = document.getElementById("hint");
-
-
-    const params = new URLSearchParams(window.location.search);
-    const EXTRA_STEPS = parseInt(params.get("extra_steps")) || 10;
-
-    
-    statusDiv.textContent = `Пролистай график вправо и кликни в подсвеченной полосе, чтобы сделать первый прогноз (1 из ${EXTRA_STEPS}).`;
-  </script>
-
+  
   <!-- Бегунок, который синхронизирован с горизонтальным скроллом -->
   <div class="slider-wrapper">
     <input type="range" id="scrollSlider" min="0" max="100" value="0">
@@ -557,6 +546,14 @@
       // После этого мини-апп закроется по правилам Telegram.
     });
   </script>
+
+
+
+  <script>
+    
+    statusDiv.textContent = `Пролистай график вправо и кликни в подсвеченной полосе, чтобы сделать первый прогноз (1 из ${EXTRA_STEPS}).`;
+  </script>
+
 </body>
 </html>
 
