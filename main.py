@@ -78,8 +78,9 @@ def build_webapp_url(user_id: int) -> str:
     - v: случайное число, чтобы Телега не кэшировала старую страницу
     """
     phi = random.choice([0.3, 0.5, 0.7])
+    extra_steps = random.choice([10, 20])
     v = random.randint(0, 10**9)
-    params = urllib.parse.urlencode({"phi": phi, "uid": user_id, "v": v})
+    params = urllib.parse.urlencode({"phi": phi, "uid": user_id, "v": v, "extra_steps": extra_steps})
     return f"{BASE_WEBAPP_URL}?{params}"
 
 

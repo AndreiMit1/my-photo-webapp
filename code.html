@@ -115,6 +115,7 @@
   </script>
 </head>
 <body>
+
   <div id="controls" style="
       position: fixed;
       top: 15%;             /* чуть ниже верхнего края, прямо над графиком */
@@ -185,7 +186,7 @@
     const params = new URLSearchParams(window.location.search);
     const phi = parseFloat(params.get("phi")) || 0.5; // запасной вариант: phi = 0.5
 
-    const EXTRA_STEPS = 10;   // сколько прогнозов должен сделать студент
+    const EXTRA_STEPS = parseInt(params.get("extra_steps")) || 10;   // сколько прогнозов должен сделать студент
     const BASE_N = 100;       // длина "исторического" ряда (видна сначала)
     const STEP_OPTIONS = [1, 5, 10];
     const STEP_SIZE = STEP_OPTIONS[Math.floor(Math.random() * STEP_OPTIONS.length)];
