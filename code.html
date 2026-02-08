@@ -163,9 +163,12 @@
   </div>
 
   <!-- Статус / подсказки -->
-  <div class="hint" id="status">
-    Пролистай график вправо и кликни в подсвеченной полосе, чтобы сделать первый прогноз (1 из 10).
-  </div>
+  <div class="hint" id="status"></div>
+  <script>
+
+    const statusDiv = document.getElementById("status");
+    statusDiv.textContent = `Пролистай график вправо и кликни в подсвеченной полосе, чтобы сделать первый прогноз (1 из ${EXTRA_STEPS}).`;
+  </script>
 
   <!-- Бегунок, который синхронизирован с горизонтальным скроллом -->
   <div class="slider-wrapper">
