@@ -414,7 +414,7 @@
       const y = evt.clientY - rect.top;
 
       // Текущий индекс времени, за который делаем прогноз (строго один шаг вперёд)
-      const targetIndex = BASE_N + currentStep * STEP_SIZE;
+      const targetIndex = BASE_N + currentStep*STEP_SIZE;
       const xTarget = xCoord(targetIndex);
 
       const zoneWidth = 60;                // ширина кликабельной зоны
