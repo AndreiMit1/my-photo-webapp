@@ -274,7 +274,7 @@
 
       // 4.2. Текущая зона прогноза: одна вертикальная полоса
       if (currentStep < EXTRA_STEPS) {
-        const targetIndex = BASE_N + currentStep * STEP_SIZE;  // куда делаем прогноз сейчас
+        const targetIndex = BASE_N + (currentStep === 0 ? STEP_SIZE : currentStep * STEP_SIZE);  // куда делаем прогноз сейчас
         const xTarget = xCoord(targetIndex);
 
         const zoneWidth = 60; // ширина подсвеченной зоны (в пикселях)
