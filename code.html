@@ -274,7 +274,7 @@
 
       // 4.2. Текущая зона прогноза: одна вертикальная полоса
       if (currentStep < EXTRA_STEPS) {
-        const targetIndex = BASE_N + currentStep;  // куда делаем прогноз сейчас
+        const targetIndex = BASE_N + currentStep * STEP_SIZE;  // куда делаем прогноз сейчас
         const xTarget = xCoord(targetIndex);
 
         const zoneWidth = 60; // ширина подсвеченной зоны (в пикселях)
@@ -451,8 +451,8 @@
 
       // Позиция линии ДО и ПОСЛЕ (идём всегда на один шаг вправо)
       const fromX = (currentLineX !== null) ? currentLineX : xCoord(oldMaxRealIndex + 1);
-      // const toX   = xTarget;
-      const toX = xCoord(BASE_N + currentStep * STEP_SIZE); 
+      const toX   = xTarget;
+       
 
       // Функция, которая обновит текстовое описание после анимации
       const nextStepText = () => {
