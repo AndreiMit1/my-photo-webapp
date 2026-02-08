@@ -165,7 +165,7 @@
   <!-- Статус / подсказки -->
   <div class="hint" id="status"></div>
   <script>
-
+    const EXTRA_STEPS = parseInt(params.get("extra_steps")) || 10;
     const statusDiv = document.getElementById("status");
     statusDiv.textContent = `Пролистай график вправо и кликни в подсвеченной полосе, чтобы сделать первый прогноз (1 из ${EXTRA_STEPS}).`;
   </script>
