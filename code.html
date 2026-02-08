@@ -451,7 +451,8 @@
 
       // Позиция линии ДО и ПОСЛЕ (идём всегда на один шаг вправо)
       const fromX = (currentLineX !== null) ? currentLineX : xCoord(oldMaxRealIndex + 1);
-      const toX   = xTarget;
+      // const toX   = xTarget;
+      const toX = xCoord(BASE_N + currentStep * STEP_SIZE); 
 
       // Функция, которая обновит текстовое описание после анимации
       const nextStepText = () => {
