@@ -32,7 +32,8 @@ def init_db():
                 y_pred REAL,
                 y_true REAL,
                 up INTEGER,
-                extra_steps INTEGER
+                extra_steps INTEGER,
+                step_size INTEGER
         )
     """)
     db.commit()
@@ -46,12 +47,13 @@ def save_results(user_id: int, payload: dict):
 
         phi = payload["phi"]
         extra_steps = payload["extra_steps"]
+        step_size = payload["step_size"]
 
         for p in payload["predictions"]:
             cursor.execute("""
                 INSERT INTO results (
-                    user_id, phi, step, t, y_pred, y_true, up, extra_steps
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    user_id, phi, step, t, y_pred, y_true, up, extra_steps, step_size
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 user_id,
                 phi,
@@ -60,7 +62,8 @@ def save_results(user_id: int, payload: dict):
                 p["y_pred"],
                 p["y_true"],
                 int(p["up"]),
-                extra_steps
+                extra_steps,
+                step_size
             ))
 
 # =========================
@@ -115,7 +118,7 @@ async def web_app_data_handler(message: types.Message):
 
     await message.answer(
         f"Результаты сохранены ✅\n"
-        f"φ = {payload['phi']}, прогнозов: {len(payload['predictions'])}"
+
     )
 
 

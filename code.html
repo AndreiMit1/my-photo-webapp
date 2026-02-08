@@ -158,7 +158,9 @@
 
     const EXTRA_STEPS = 10;   // сколько прогнозов должен сделать студент
     const BASE_N = 100;       // длина "исторического" ряда (видна сначала)
-    const TOTAL_N = BASE_N + EXTRA_STEPS; // общая длина (история + "будущее")
+    const STEP_OPTIONS = [1, 5];
+    const STEP_SIZE = STEP_OPTIONS[Math.floor(Math.random() * STEP_OPTIONS.length)];
+    const TOTAL_N = BASE_N + EXTRA_STEPS * STEP_SIZE; // общая длина (история + "будущее")
 
     // Генератор нормального распределения (Box–Muller).
     // Студентам можно объяснить: это способ получить N(0,1) из U(0,1).
@@ -303,6 +305,7 @@
       ctx.fillStyle = "#000";
       ctx.font = "20px system-ui";
       ctx.fillText("AR(1), φ = " + phi.toFixed(2), pad, pad - 10);
+      ctx.fillText("STEP_SIZE = " + STEP_SIZE, pad, pad + 15);
 
       // 4.4. Рисуем все прогнозные крестики P1, P2, ...
       for (const p of predictions) {
@@ -411,7 +414,7 @@
       const y = evt.clientY - rect.top;
 
       // Текущий индекс времени, за который делаем прогноз (строго один шаг вперёд)
-      const targetIndex = BASE_N + currentStep;
+      const targetIndex = BASE_N + currentStep * STEP_SIZE;
       const xTarget = xCoord(targetIndex);
 
       const zoneWidth = 60;                // ширина кликабельной зоны
@@ -490,6 +493,7 @@
         phi: phi,
         base_n: BASE_N,
         extra_steps: EXTRA_STEPS,
+        step_size: STEP_SIZE,
         predictions: predictions
       };
 
