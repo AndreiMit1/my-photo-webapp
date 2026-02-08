@@ -158,7 +158,7 @@
 
     const EXTRA_STEPS = 10;   // сколько прогнозов должен сделать студент
     const BASE_N = 100;       // длина "исторического" ряда (видна сначала)
-    const STEP_OPTIONS = [1, 5];
+    const STEP_OPTIONS = [1, 5, 10];
     const STEP_SIZE = STEP_OPTIONS[Math.floor(Math.random() * STEP_OPTIONS.length)];
     const TOTAL_N = BASE_N + EXTRA_STEPS * STEP_SIZE; // общая длина (история + "будущее")
 
