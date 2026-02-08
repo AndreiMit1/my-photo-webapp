@@ -2,7 +2,7 @@ import asyncio
 import sqlite3
 import random
 import urllib.parse
-
+import json
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
@@ -24,36 +24,44 @@ def init_db():
     cursor = db.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS results (
-            user_id    INTEGER,
-            price_up   INTEGER,
-            price_down INTEGER
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                phi REAL,
+                step INTEGER,
+                t INTEGER,
+                y_pred REAL,
+                y_true REAL,
+                up INTEGER,
+                extra_steps INTEGER
         )
     """)
     db.commit()
     db.close()
-    print("база данных создана")
+    print("База данных создана")
 
 
-def insert_result(user_id: int, choice: str):
-    db = sqlite3.connect("results.db")
-    cursor = db.cursor()
+def save_results(user_id: int, payload: dict):
+    with sqlite3.connect("results.db") as db:
+        cursor = db.cursor()
 
-    if choice == "1":
-        price_up, price_down = 1, 0
-    elif choice == "0":
-        price_up, price_down = 0, 1
-    else:
-        db.close()
-        return
+        phi = payload["phi"]
+        extra_steps = payload["extra_steps"]
 
-    cursor.execute(
-        "INSERT INTO results (user_id, price_up, price_down) VALUES (?, ?, ?)",
-        (user_id, price_up, price_down),
-    )
-    db.commit()
-    db.close()
-    print(user_id, price_up, price_down)
-
+        for p in payload["predictions"]:
+            cursor.execute("""
+                INSERT INTO results (
+                    user_id, phi, step, t, y_pred, y_true, up, extra_steps
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                user_id,
+                phi,
+                p["step"],
+                p["t"],
+                p["y_pred"],
+                p["y_true"],
+                int(p["up"]),
+                extra_steps
+            ))
 
 # =========================
 #   WEBAPP-КНОПКА
@@ -99,12 +107,16 @@ async def cmd_start(message: types.Message):
 
 @dp.message(F.web_app_data)
 async def web_app_data_handler(message: types.Message):
-    data = message.web_app_data.data  # "0" или "1"
     user_id = message.from_user.id
-    print("Получено значение:", data)
 
-    insert_result(user_id, data)
-    await message.answer(f"Ты нажал: {data}")
+    payload = json.loads(message.web_app_data.data)
+
+    save_results(user_id, payload)
+
+    await message.answer(
+        f"Результаты сохранены ✅\n"
+        f"φ = {payload['phi']}, прогнозов: {len(payload['predictions'])}"
+    )
 
 
 # =========================
