@@ -262,15 +262,15 @@
       ctx.stroke();
 
 
-      // 4.0. Вертикальная разметка всех шагов
-      ctx.strokeStyle = "rgba(200, 200, 200, 0.1)"; // светло-серая и прозрачная
+      // 4.0. Вертикальная разметка каждой точки ряда
+      ctx.strokeStyle = "rgba(200, 200, 200, 0.15)"; // очень прозрачная светло-серая
       ctx.lineWidth = 1;
 
-      for (let i = 0; i <= TOTAL_N; i += STEP_SIZE) {
+      for (let i = 0; i <= TOTAL_N; i++) {
           const x = xCoord(i);
           ctx.beginPath();
-          ctx.moveTo(x, pad);              // от верхнего паддинга
-          ctx.lineTo(x, canvas.height - pad); // до нижнего паддинга
+          ctx.moveTo(x, pad);
+          ctx.lineTo(x, canvas.height - pad);
           ctx.stroke();
       }
 
