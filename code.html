@@ -261,6 +261,19 @@
       ctx.lineTo(canvas.width - pad, canvas.height - pad);
       ctx.stroke();
 
+
+      // 4.0. Вертикальная разметка всех шагов
+      ctx.strokeStyle = "rgba(200, 200, 200, 0.1)"; // светло-серая и прозрачная
+      ctx.lineWidth = 1;
+
+      for (let i = 0; i <= TOTAL_N; i += STEP_SIZE) {
+          const x = xCoord(i);
+          ctx.beginPath();
+          ctx.moveTo(x, pad);              // от верхнего паддинга
+          ctx.lineTo(x, canvas.height - pad); // до нижнего паддинга
+          ctx.stroke();
+      }
+
       // 4.1. Реальный процесс (синяя линия) — рисуем только открытую часть
       ctx.strokeStyle = "#4b6cff";
       ctx.lineWidth = 2;
