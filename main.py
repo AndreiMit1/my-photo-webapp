@@ -8,8 +8,8 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 
-API_TOKEN = "8592559811:AAH29ce0hb8CQCuT7E_EIY64Nwoi5CILQX8"  # 🔹 вставь сюда токен бота
-BASE_WEBAPP_URL = "https://my-photo-webapp.pages.dev/code.html"  # 🔹 твой Cloudflare Pages URL
+API_TOKEN = "8592559811:AAH29ce0hb8CQCuT7E_EIY64Nwoi5CILQX8"
+BASE_WEBAPP_URL = "https://my-photo-webapp.pages.dev/code.html"
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
@@ -24,16 +24,14 @@ def init_db():
     cursor = db.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS results (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER,
-                phi REAL,
-                step INTEGER,
-                t INTEGER,
-                y_pred REAL,
-                y_true REAL,
-                up INTEGER,
-                extra_steps INTEGER,
-                step_size INTEGER
+            id        INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id   INTEGER,
+            phi       REAL,
+            round     INTEGER,
+            horizon   INTEGER,
+            t         INTEGER,
+            y_pred    REAL,
+            y_true    REAL
         )
     """)
     db.commit()
@@ -44,56 +42,37 @@ def init_db():
 def save_results(user_id: int, payload: dict):
     with sqlite3.connect("results.db") as db:
         cursor = db.cursor()
-
         phi = payload["phi"]
-        extra_steps = payload["extra_steps"]
-        step_size = payload["step_size"]
-
         for p in payload["predictions"]:
             cursor.execute("""
-                INSERT INTO results (
-                    user_id, phi, step, t, y_pred, y_true, up, extra_steps, step_size
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO results (user_id, phi, round, horizon, t, y_pred, y_true)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (
                 user_id,
                 phi,
-                p["step"],
+                p["round"],
+                p["horizon"],
                 p["t"],
                 p["y_pred"],
                 p["y_true"],
-                int(p["up"]),
-                extra_steps,
-                step_size
             ))
+
 
 # =========================
 #   WEBAPP-КНОПКА
 # =========================
 
 def build_webapp_url(user_id: int) -> str:
-    """
-    Собираем URL для мини-аппа:
-    - phi: параметр AR(1), если захочешь использовать его в будущем
-    - uid: id пользователя
-    - v: случайное число, чтобы Телега не кэшировала старую страницу
-    """
     phi = random.choice([0.3, 0.5, 0.7])
-    extra_steps = random.choice([10, 20])
-    v = random.randint(0, 10**9)
-    params = urllib.parse.urlencode({"phi": phi, "uid": user_id, "v": v, "extra_steps": extra_steps})
+    v   = random.randint(0, 10**9)
+    params = urllib.parse.urlencode({"phi": phi, "uid": user_id, "v": v})
     return f"{BASE_WEBAPP_URL}?{params}"
 
 
 def get_webapp_keyboard(user_id: int) -> ReplyKeyboardMarkup:
-    url = build_webapp_url(user_id)
-    button = KeyboardButton(
-        text="Открыть график",
-        web_app=WebAppInfo(url=url),
-    )
-    return ReplyKeyboardMarkup(
-        keyboard=[[button]],
-        resize_keyboard=True,
-    )
+    url    = build_webapp_url(user_id)
+    button = KeyboardButton(text="Открыть график", web_app=WebAppInfo(url=url))
+    return ReplyKeyboardMarkup(keyboard=[[button]], resize_keyboard=True)
 
 
 # =========================
@@ -102,25 +81,41 @@ def get_webapp_keyboard(user_id: int) -> ReplyKeyboardMarkup:
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    user_id = message.from_user.id
     await message.answer(
-        "Нажми кнопку, чтобы открыть мини-приложение с графиком",
-        reply_markup=get_webapp_keyboard(user_id),
+        "Нажми кнопку, чтобы открыть мини-приложение с графиком.\n"
+        "Тебе нужно будет сделать прогнозы на горизонты 1, 2, 3, 6, 9, 12 шагов — "
+        "и так 5 раундов.",
+        reply_markup=get_webapp_keyboard(message.from_user.id),
     )
 
 
 @dp.message(F.web_app_data)
 async def web_app_data_handler(message: types.Message):
     user_id = message.from_user.id
-
     payload = json.loads(message.web_app_data.data)
 
     save_results(user_id, payload)
 
-    await message.answer(
-        f"Результаты сохранены ✅\n"
+    total = len(payload["predictions"])
+    rounds = payload.get("total_rounds", 5)
+    horizons = payload.get("horizons", [1, 2, 3, 6, 9, 12])
 
-    )
+    # Считаем MAE по горизонтам
+    mae_by_h = {}
+    for p in payload["predictions"]:
+        h = p["horizon"]
+        err = abs(p["y_pred"] - p["y_true"])
+        mae_by_h.setdefault(h, []).append(err)
+
+    lines = [f"Результаты сохранены ✅  ({total} прогнозов, {rounds} раундов)\n"]
+    lines.append("MAE по горизонтам:")
+    for h in horizons:
+        errs = mae_by_h.get(h, [])
+        if errs:
+            mae = sum(errs) / len(errs)
+            lines.append(f"  h={h:>2}: {mae:.3f}")
+
+    await message.answer("\n".join(lines))
 
 
 # =========================
@@ -136,7 +131,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-
-
-
