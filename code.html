@@ -1,18 +1,9 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  
-  
   <meta charset="UTF-8">
-
-
-
-  <title>Прогноз точки (AR(1))</title>
+  <title>Прогноз горизонтов (AR(1))</title>
   <style>
-    /* 
-      Базовая разметка страницы.
-      Всё делаем в тёмной теме, чтобы график был в фокусе.
-    */
     body {
       margin: 0;
       background: #111;
@@ -26,66 +17,43 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /*
-      Контейнер с горизонтальным скроллом.
-      Внутри лежит canvas, который шире экрана.
-      Пользователь может «свайпать» график влево/вправо.
-    */
     .scroll-wrapper {
       width: 100vw;
       overflow-x: scroll;
       overflow-y: hidden;
-      -webkit-overflow-scrolling: touch; /* плавный скролл на iOS */
+      -webkit-overflow-scrolling: touch;
       background: #111;
     }
 
-    /*
-      Собственно график.
-      CSS-ширина/высота = визуальные размеры.
-      Реальные размеры для рисования задаём в JS (canvas.width/height).
-    */
     canvas {
-      width: 2200px;               /* видимая ширина на экране */
-      height: 500px;               /* видимая высота */
+      width: 2200px;
+      height: 500px;
       background: #fff;
       margin: 0 auto;
       display: block;
       border-radius: 8px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.35);
     }
 
-    /*
-      Текстовый статус под графиком:
-      сюда выводим подсказки + координаты и т.д.
-    */
     .hint {
       font-size: 14px;
       color: #ccc;
       text-align: center;
       padding: 6px 16px 4px 16px;
-      min-height: 40px; /* чтобы текст не "скакал" при смене сообщений */
+      min-height: 40px;
     }
 
-    /*
-      Контейнер для бегунка (range-элемент).
-      Бегунок привязан к горизонтальному скроллу.
-    */
     .slider-wrapper {
       width: 100vw;
       padding: 0 16px 8px 16px;
       box-sizing: border-box;
     }
 
-    input[type="range"] {
-      width: 100%;
-    }
+    input[type="range"] { width: 100%; }
 
-    .actions {
-      padding-bottom: 10px;
-    }
+    .actions { padding-bottom: 10px; display: flex; gap: 10px; }
 
-    /* Кнопка "Отправить результаты" (изначально залочена) */
-    .send-btn {
+    .btn {
       padding: 10px 20px;
       border-radius: 8px;
       border: none;
@@ -94,472 +62,408 @@
       cursor: pointer;
       background: #3498db;
       color: #fff;
-      opacity: 0.4;            /* пока заблокирована — полупрозрачная */
+      opacity: 0.4;
+    }
+    .btn.enabled { opacity: 1; }
+
+    #progressBar {
+      width: 90vw;
+      max-width: 600px;
+      height: 8px;
+      background: #333;
+      border-radius: 4px;
+      margin-bottom: 6px;
+      overflow: hidden;
+    }
+    #progressFill {
+      height: 100%;
+      background: #2ecc71;
+      border-radius: 4px;
+      transition: width 0.3s ease;
     }
 
-    .send-btn.enabled {
-      opacity: 1;              /* активная кнопка */
+    #roundLabel {
+      font-size: 13px;
+      color: #aaa;
+      margin-bottom: 4px;
     }
   </style>
-
-  <!-- Telegram WebApp JS SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
-    // Сообщаем Telegram, что web-app готов и просим максимум места по высоте
     Telegram.WebApp.ready();
     Telegram.WebApp.expand();
     Telegram.WebApp.setHeaderColor("dark");
     Telegram.WebApp.setBackgroundColor("#111");
-    
-  
   </script>
 </head>
 <body>
 
   <div id="controls" style="
-      position: fixed;
-      top: 15%;             /* чуть ниже верхнего края, прямо над графиком */
-      left: 50%;
+      position: fixed; top: 10%; left: 50%;
       transform: translateX(-50%);
-      display: flex;
-      flex-direction: row;
-      gap: 10px;
-  ">
-    <button id="fullscreenBtn" style="
-        width: 150px;       /* фиксированная ширина, одинаковая для обеих кнопок */
-        padding: 12px 0;    /* вертикальный padding для высоты кнопки */
-        font-size: 16px;
-        background: #3498db;
-        color: white;
-        border: 1px solid #fff;
-        border-radius: 6px;
-        cursor: pointer;
-    ">Полный экран</button>
-
-    <button id="normalBtn" style="
-        width: 150px;       
-        padding: 12px 0;    
-        font-size: 16px;
-        background: #3498db;
-        color: white;
-        border: 1px solid #fff;
-        border-radius: 6px;
-        cursor: pointer;
-    ">Свернуть</button>
+      display: flex; flex-direction: row; gap: 10px;">
+    <button id="fullscreenBtn" style="width:140px;padding:10px 0;font-size:15px;background:#3498db;color:white;border:1px solid #fff;border-radius:6px;cursor:pointer;">Полный экран</button>
+    <button id="normalBtn"     style="width:140px;padding:10px 0;font-size:15px;background:#3498db;color:white;border:1px solid #fff;border-radius:6px;cursor:pointer;">Свернуть</button>
   </div>
-
-
-
-
   <script>
-    fullscreenBtn.onclick = () => Telegram.WebApp.requestFullscreen();
-    normalBtn.onclick = () => Telegram.WebApp.exitFullscreen();
+    document.getElementById("fullscreenBtn").onclick = () => Telegram.WebApp.requestFullscreen();
+    document.getElementById("normalBtn").onclick     = () => Telegram.WebApp.exitFullscreen();
   </script>
 
+  <div id="roundLabel">Раунд 1 из 5</div>
+  <div id="progressBar"><div id="progressFill" style="width:0%"></div></div>
 
-  <!-- Область со скроллом и самим графиком -->
   <div class="scroll-wrapper" id="scrollWrapper">
     <canvas id="plot"></canvas>
   </div>
 
-  <!-- Статус / подсказки -->
   <div class="hint" id="status">
-    Пролистай график вправо и кликни в подсвеченной полосе, чтобы сделать первый прогноз.
+    Пролистай вправо и кликни в зелёной полосе горизонта h=1 для первого прогноза.
   </div>
-  
-  <!-- Бегунок, который синхронизирован с горизонтальным скроллом -->
+
   <div class="slider-wrapper">
     <input type="range" id="scrollSlider" min="0" max="100" value="0">
   </div>
 
-  <!-- Кнопка отправки результатов (активируется, когда сделано 10 прогнозов) -->
   <div class="actions">
-    <button id="sendBtn" class="send-btn" disabled>Отправить результаты</button>
+    <button id="sendBtn" class="btn" disabled>Отправить результаты</button>
   </div>
 
-  <script>
-    /********************************************************************
-     *                 1. ПАРАМЕТРЫ МОДЕЛИ И ДАННЫЕ
-     ********************************************************************/
+<script>
+/***  ПАРАМЕТРЫ  ***/
+const urlParams = new URLSearchParams(window.location.search);
+const phi         = parseFloat(urlParams.get("phi"))         || 0.5;
+const TOTAL_ROUNDS = 5;
+const HORIZONS     = [1, 2, 3, 6, 9, 12];   // горизонты прогноза
+const BASE_N       = 100;                     // длина истории
+const HISTORY_LEN  = BASE_N;                 // видимая история (не меняется между раундами)
+// Сколько точек нужно вперёд от BASE_N: max горизонт = 12
+const FUTURE_LEN   = Math.max(...HORIZONS);
+const TOTAL_N      = BASE_N + FUTURE_LEN;    // всего точек в ряду
 
-    // Читаем phi из URL, например ?phi=0.7 — так можно делать разные серии
-    const params = new URLSearchParams(window.location.search);
-    const phi = parseFloat(params.get("phi")) || 0.5; // запасной вариант: phi = 0.5
+/***  ГЕНЕРАЦИЯ AR(1)  ***/
+function randn() {
+  const u = 1 - Math.random(), v = 1 - Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function generateAR1(n, phi, sigma=0.5) {
+  const X = [sigma * randn()];
+  for (let t = 1; t < n; t++) X.push(phi * X[t-1] + sigma * randn());
+  return X;
+}
 
-    const EXTRA_STEPS = parseInt(params.get("extra_steps")) || 10;   // сколько прогнозов должен сделать студент
-    const BASE_N = 100;       // длина "исторического" ряда (видна сначала)
-    const STEP_OPTIONS = [1, 5, 10];
-    const STEP_SIZE = STEP_OPTIONS[Math.floor(Math.random() * STEP_OPTIONS.length)];
-    const TOTAL_N = BASE_N + EXTRA_STEPS * STEP_SIZE; // общая длина (история + "будущее")
+/***  СОСТОЯНИЕ  ***/
+let allRoundData = [];  // данные для каждого раунда (массив массивов)
+let allPredictions = []; // все прогнозы всех раундов
 
-    // Генератор нормального распределения (Box–Muller).
-    // Студентам можно объяснить: это способ получить N(0,1) из U(0,1).
-    function randn() {
-      const u = 1 - Math.random();
-      const v = 1 - Math.random();
-      return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+let currentRound   = 0; // 0..TOTAL_ROUNDS-1
+let currentHorizonIdx = 0; // какой горизонт сейчас (0..5)
+// phase: "predicting" | "revealing"
+let phase          = "predicting";
+
+// Для текущего раунда
+function currentData() { return allRoundData[currentRound]; }
+function currentHorizon() { return HORIZONS[currentHorizonIdx]; }
+function targetIndex() { return BASE_N - 1 + currentHorizon(); }
+
+// Прогнозы текущего раунда
+let roundPredictions = []; // {horizon, t, y_pred, y_true}
+
+// Инициализируем данные для всех раундов сразу
+for (let r = 0; r < TOTAL_ROUNDS; r++) {
+  allRoundData.push(generateAR1(TOTAL_N, phi));
+}
+
+/***  CANVAS  ***/
+const canvas = document.getElementById("plot");
+const ctx    = canvas.getContext("2d");
+canvas.width  = 2200;
+canvas.height = 500;
+const pad = 40, W = canvas.width - 2*pad, H = canvas.height - 2*pad;
+
+function getMinMax(data) {
+  let mn = Infinity, mx = -Infinity;
+  for (const v of data) { if (v < mn) mn = v; if (v > mx) mx = v; }
+  return [mn, mx];
+}
+
+function yScaleFor(minVal, maxVal) {
+  return v => {
+    if (maxVal === minVal) return canvas.height / 2;
+    return pad + H * (1 - (v - minVal) / (maxVal - minVal));
+  };
+}
+function invYScaleFor(minVal, maxVal) {
+  return y => {
+    const ratio = (y - pad) / H;
+    const c = Math.min(1, Math.max(0, ratio));
+    return minVal + (1 - c) * (maxVal - minVal);
+  };
+}
+function xCoord(i) { return pad + W * (i / TOTAL_N); }
+
+/***  ОТРИСОВКА  ***/
+function drawSeries() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const data = currentData();
+  const [minVal, maxVal] = getMinMax(data);
+  const yScale    = yScaleFor(minVal, maxVal);
+  const invYScale = invYScaleFor(minVal, maxVal);
+
+  // Ось X
+  ctx.strokeStyle = "#ccc"; ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad, canvas.height - pad);
+  ctx.lineTo(canvas.width - pad, canvas.height - pad);
+  ctx.stroke();
+
+  // Сетка по X
+  ctx.strokeStyle = "rgba(200,200,200,0.12)"; ctx.lineWidth = 1;
+  for (let i = 0; i <= TOTAL_N; i++) {
+    const x = xCoord(i);
+    ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, canvas.height - pad); ctx.stroke();
+  }
+
+  // Реальный ряд — история (0..BASE_N-1)
+  ctx.strokeStyle = "#4b6cff"; ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i < BASE_N; i++) {
+    const x = xCoord(i), y = yScale(data[i]);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Если фаза "revealing" — показать реальный будущий ряд (BASE_N..TOTAL_N-1)
+  if (phase === "revealing") {
+    ctx.strokeStyle = "#4b6cff"; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    for (let i = BASE_N - 1; i < TOTAL_N; i++) {
+      const x = xCoord(i), y = yScale(data[i]);
+      if (i === BASE_N - 1) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
+    ctx.stroke(); ctx.setLineDash([]);
 
-    // Генерация AR(1): X_t = phi * X_{t-1} + eps_t
-    function generateAR1(n, phi, sigma) {
-      const eps = [];
-      for (let i = 0; i < n; i++) eps.push(sigma * randn());
-      const X = [eps[0]];
-      for (let t = 1; t < n; t++) {
-        X.push(phi * X[t-1] + eps[t]);
-      }
-      return X;
-    }
-
-    const sigma = 0.5;
-    // data[i] — истинное значение процесса в момент времени i (0..TOTAL_N-1)
-    const data = generateAR1(TOTAL_N, phi, sigma);
-
-    /********************************************************************
-     *                 2. НАСТРОЙКА CANVAS И ШКАЛ
-     ********************************************************************/
-
-    const canvas = document.getElementById("plot");
-    const ctx = canvas.getContext("2d");
-
-    // Реальные размеры полотна (в пикселях, для рисования)
-    canvas.width  = 2200;
-    canvas.height = 500;
-
-    // Внутренние отступы (для осей и подписи)
-    const pad = 40;
-    const W = canvas.width - 2 * pad;
-    const H = canvas.height - 2 * pad;
-
-    // Находим минимум и максимум ряда — по ним строим шкалу Y
-    const minVal = Math.min(...data);
-    const maxVal = Math.max(...data);
-
-    // Прямая шкала: значение -> пиксель по вертикали
-    function yScale(v) {
-      if (maxVal === minVal) return canvas.height / 2;
-      return pad + H * (1 - (v - minVal) / (maxVal - minVal));
-    }
-
-    // Обратная шкала: пиксель по вертикали -> значение
-    function invYScale(y) {
-      const ratio = (y - pad) / H;
-      const clamped = Math.min(1, Math.max(0, ratio));
-      return minVal + (1 - clamped) * (maxVal - minVal);
-    }
-
-    // Шкала по X: индекс i (0..TOTAL_N) -> пиксель
-    function xCoord(i) {
-      return pad + W * (i / TOTAL_N);
-    }
-
-    /********************************************************************
-     *                 3. СОСТОЯНИЕ ЭКСПЕРИМЕНТА
-     ********************************************************************/
-
-    let currentStep = 0;              // номер текущего прогноза (0..EXTRA_STEPS-1)
-    let maxRealIndex = BASE_N - 1;    // до какого момента студент уже увидел реальные данные
-    let currentLineX = null;          // текущая позиция пунктирной вертикальной линии (для анимации)
-
-    // Массив с результатами всех прогнозов
-    // Каждый элемент:
-    // {
-    //   step: номер шага (0..9),
-    //   t: индекс времени, за который делали прогноз,
-    //   y_pred: выбранное студентом значение,
-    //   y_true: истинное значение AR(1) в этот момент,
-    //   up: ожидался ли рост по сравнению с предыдущим значением
-    // }
-    const predictions = [];
-
-    const statusDiv = document.getElementById("status");
-    const wrapper = document.getElementById("scrollWrapper");
-    const slider = document.getElementById("scrollSlider");
-    const sendBtn = document.getElementById("sendBtn");
-
-        /********************************************************************
-     *                 4. ОТРИСОВКА ГРАФИКА
-     ********************************************************************/
-    function drawSeries() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Ось X
-      ctx.strokeStyle = "#ccc";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(pad, canvas.height - pad);
-      ctx.lineTo(canvas.width - pad, canvas.height - pad);
-      ctx.stroke();
-
-
-      // 4.0. Вертикальная разметка каждой точки ряда
-      ctx.strokeStyle = "rgba(200, 200, 200, 0.15)"; // очень прозрачная светло-серая
-      ctx.lineWidth = 1;
-
-      for (let i = 0; i <= TOTAL_N; i++) {
-          const x = xCoord(i);
-          ctx.beginPath();
-          ctx.moveTo(x, pad);
-          ctx.lineTo(x, canvas.height - pad);
-          ctx.stroke();
-      }
-
-      // 4.1. Реальный процесс (синяя линия) — рисуем только открытую часть
-      ctx.strokeStyle = "#4b6cff";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      for (let i = 0; i <= maxRealIndex; i++) {
-        const x = xCoord(i);
-        const y = yScale(data[i]);
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-
-      // 4.2. Текущая зона прогноза: одна вертикальная полоса
-      if (currentStep < EXTRA_STEPS) {
-        const targetIndex = (BASE_N - 1) + (currentStep + 1) * STEP_SIZE;  // куда делаем прогноз сейчас
-        const xTarget = xCoord(targetIndex);
-
-        const zoneWidth = 60; // ширина подсвеченной зоны (в пикселях)
-
-        // Полупрозрачный прямоугольник — "зона клика"
-        ctx.fillStyle = "rgba(46, 204, 113, 0.06)";
-        ctx.fillRect(xTarget - zoneWidth / 2, pad, zoneWidth, H);
-
-        // Пунктирная линия в центре зоны
-        const defaultLineX = xTarget;
-        const lineX = (currentLineX !== null) ? currentLineX : defaultLineX;
-
-        ctx.strokeStyle = "#2ecc71";
-        ctx.setLineDash([6, 6]);
-        ctx.beginPath();
-        ctx.moveTo(lineX, pad);
-        ctx.lineTo(lineX, canvas.height - pad);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Подпись "кликни здесь"
-        ctx.fillStyle = "#000";
-        ctx.font = "14px system-ui";
-        ctx.fillText("Выбери высоту здесь →", xTarget - 140, pad + 24);
-      }
-
-      // 4.3. Подпись параметра phi
+    // Точки истинных значений на горизонтах
+    for (const h of HORIZONS) {
+      const ti = BASE_N - 1 + h;
+      const x = xCoord(ti), y = yScale(data[ti]);
+      ctx.fillStyle = "#4b6cff";
+      ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2); ctx.fill();
       ctx.fillStyle = "#000";
-      ctx.font = "20px system-ui";
-      ctx.fillText("AR(1), φ = " + phi.toFixed(2), pad, pad - 10);
-      ctx.fillText("STEP_SIZE = " + STEP_SIZE, pad, pad + 15);
+      ctx.font = "11px system-ui";
+      ctx.fillText(`h=${h}`, x + 6, y - 8);
+    }
+  }
 
-      // 4.4. Рисуем все прогнозные крестики P1, P2, ...
-      for (const p of predictions) {
-        const x = xCoord(p.t);
-        const y = yScale(p.y_pred);
-
-        // Крестик в цвете "оранжевый"
-        ctx.strokeStyle = "#e67e22";
-        ctx.lineWidth = 2;
-        const size = 7;
-        ctx.beginPath();
-        ctx.moveTo(x - size, y - size);
-        ctx.lineTo(x + size, y + size);
-        ctx.moveTo(x - size, y + size);
-        ctx.lineTo(x + size, y - size);
-        ctx.stroke();
-
-        // Подпись P1, P2, ...
-        ctx.font = "12px system-ui";
-        ctx.fillStyle = "#e67e22";
-        ctx.fillText(`P${p.step + 1}`, x + 6, y - 8);
-      }
+  // Зоны прогнозов (в фазе предсказания)
+  if (phase === "predicting") {
+    // Тусклые зоны для уже сделанных горизонтов
+    for (let hi = 0; hi < currentHorizonIdx; hi++) {
+      const h = HORIZONS[hi];
+      const xT = xCoord(BASE_N - 1 + h);
+      ctx.fillStyle = "rgba(46,204,113,0.04)";
+      ctx.fillRect(xT - 25, pad, 50, H);
     }
 
-    // Первый рендер
+    // Активная зона
+    const xT = xCoord(targetIndex());
+    ctx.fillStyle = "rgba(46,204,113,0.10)";
+    ctx.fillRect(xT - 30, pad, 60, H);
+
+    ctx.strokeStyle = "#2ecc71"; ctx.setLineDash([6,6]);
+    ctx.beginPath(); ctx.moveTo(xT, pad); ctx.lineTo(xT, canvas.height - pad); ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = "#000"; ctx.font = "13px system-ui";
+    ctx.fillText(`← h = ${currentHorizon()}`, xT + 4, pad + 20);
+
+    // Метки будущих горизонтов (тусклые)
+    for (let hi = currentHorizonIdx + 1; hi < HORIZONS.length; hi++) {
+      const h = HORIZONS[hi];
+      const x = xCoord(BASE_N - 1 + h);
+      ctx.strokeStyle = "rgba(46,204,113,0.25)"; ctx.setLineDash([4,8]);
+      ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, canvas.height - pad); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#666"; ctx.font = "12px system-ui";
+      ctx.fillText(`h=${h}`, x + 3, pad + 20);
+    }
+  }
+
+  // Прогнозные крестики текущего раунда
+  for (let hi = 0; hi < roundPredictions.length; hi++) {
+    const p = roundPredictions[hi];
+    const x = xCoord(p.t), y = yScale(p.y_pred);
+    ctx.strokeStyle = "#e67e22"; ctx.lineWidth = 2;
+    const sz = 7;
+    ctx.beginPath();
+    ctx.moveTo(x-sz, y-sz); ctx.lineTo(x+sz, y+sz);
+    ctx.moveTo(x-sz, y+sz); ctx.lineTo(x+sz, y-sz);
+    ctx.stroke();
+    ctx.fillStyle = "#e67e22"; ctx.font = "12px system-ui";
+    ctx.fillText(`h=${HORIZONS[hi]}`, x + 8, y - 8);
+
+    // В фазе reveal — нарисовать линию к истинному значению
+    if (phase === "revealing") {
+      const yT = yScale(p.y_true);
+      const xP = x;
+      ctx.strokeStyle = "rgba(231,76,60,0.6)"; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(xP, y); ctx.lineTo(xP, yT); ctx.stroke();
+      ctx.setLineDash([]);
+      // Ошибка
+      const err = (p.y_pred - p.y_true).toFixed(2);
+      ctx.fillStyle = "#e74c3c"; ctx.font = "11px system-ui";
+      ctx.fillText(`err=${err}`, xP + 8, (y + yT) / 2);
+    }
+  }
+
+  // Подписи
+  ctx.fillStyle = "#000"; ctx.font = "18px system-ui";
+  ctx.fillText(`AR(1), φ=${phi.toFixed(2)}  |  Раунд ${currentRound+1}/${TOTAL_ROUNDS}`, pad, pad - 10);
+
+  if (phase === "predicting") {
+    ctx.fillStyle = "#1a8a4a"; ctx.font = "14px system-ui";
+    ctx.fillText(`Прогнозов сделано: ${roundPredictions.length} / ${HORIZONS.length}  (следующий горизонт h=${currentHorizon()})`, pad, canvas.height - pad + 28);
+  } else {
+    ctx.fillStyle = "#e74c3c"; ctx.font = "14px system-ui";
+    ctx.fillText(`Раунд ${currentRound+1} завершён. Нажмите «Следующий раунд» или «Отправить».`, pad, canvas.height - pad + 28);
+  }
+}
+
+drawSeries();
+
+/***  СКРОЛЛ И СЛАЙДЕР  ***/
+const wrapper = document.getElementById("scrollWrapper");
+const slider  = document.getElementById("scrollSlider");
+const statusDiv = document.getElementById("status");
+const sendBtn   = document.getElementById("sendBtn");
+
+slider.addEventListener("input", () => {
+  const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
+  wrapper.scrollLeft = (slider.value / 100) * maxScroll;
+});
+wrapper.addEventListener("scroll", () => {
+  const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
+  if (maxScroll > 0) slider.value = (wrapper.scrollLeft / maxScroll) * 100;
+});
+setTimeout(() => { slider.value = 100; slider.dispatchEvent(new Event("input")); }, 300);
+
+/***  ПРОГРЕСС  ***/
+function updateProgress() {
+  const totalPreds = TOTAL_ROUNDS * HORIZONS.length;
+  const done       = allPredictions.length + roundPredictions.length;
+  document.getElementById("progressFill").style.width = (done / totalPreds * 100) + "%";
+  document.getElementById("roundLabel").textContent = `Раунд ${currentRound+1} из ${TOTAL_ROUNDS}`;
+}
+
+/***  КЛИК  ***/
+canvas.addEventListener("click", function(evt) {
+  if (phase !== "predicting") return;
+
+  const rect = canvas.getBoundingClientRect();
+  const x = evt.clientX - rect.left;
+  const y = evt.clientY - rect.top;
+
+  const data   = currentData();
+  const [minVal, maxVal] = getMinMax(data);
+  const invYScale = invYScaleFor(minVal, maxVal);
+
+  const xTarget = xCoord(targetIndex());
+  const zoneW   = 60;
+
+  if (x < xTarget - zoneW/2 || x > xTarget + zoneW/2) {
+    statusDiv.textContent = `Кликни в зелёной полосе для горизонта h=${currentHorizon()}.`;
+    return;
+  }
+
+  const yPred = invYScale(y);
+  const yTrue = data[targetIndex()];
+
+  roundPredictions.push({
+    round: currentRound,
+    horizon: currentHorizon(),
+    t: targetIndex(),
+    y_pred: yPred,
+    y_true: yTrue
+  });
+
+  currentHorizonIdx++;
+  updateProgress();
+
+  if (currentHorizonIdx < HORIZONS.length) {
+    // Ещё есть горизонты
+    statusDiv.textContent =
+      `h=${HORIZONS[currentHorizonIdx-1]} ✓ (y̰=${yPred.toFixed(2)}, real=${yTrue.toFixed(2)}). ` +
+      `Теперь h=${currentHorizon()} — кликни в следующей полосе.`;
     drawSeries();
+  } else {
+    // Все горизонты сделаны — reveal
+    phase = "revealing";
+    drawSeries();
+    statusDiv.textContent = "Все горизонты предсказаны! Сравни прогнозы с реальными значениями.";
+    showNextOrSend();
+  }
+});
 
+/***  КНОПКА "СЛЕДУЮЩИЙ РАУНД" ИЛИ "ОТПРАВИТЬ"  ***/
+function showNextOrSend() {
+  const actionsDiv = document.querySelector(".actions");
+  // Удаляем старую кнопку "next" если есть
+  const old = document.getElementById("nextBtn");
+  if (old) old.remove();
 
-    /********************************************************************
-     *                 5. БЕГУНОК <-> СКРОЛЛ
-     ********************************************************************/
+  if (currentRound < TOTAL_ROUNDS - 1) {
+    const btn = document.createElement("button");
+    btn.id = "nextBtn";
+    btn.className = "btn enabled";
+    btn.textContent = "Следующий раунд →";
+    actionsDiv.insertBefore(btn, sendBtn);
+    btn.addEventListener("click", startNextRound);
+  } else {
+    // Последний раунд — активируем отправку
+    sendBtn.disabled = false;
+    sendBtn.classList.add("enabled");
+  }
+}
 
-    function updateSliderFromScroll() {
-      const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
-      if (maxScroll <= 0) {
-        slider.value = 0;
-        return;
-      }
-      const ratio = wrapper.scrollLeft / maxScroll;
-      slider.value = ratio * 100;
-    }
+function startNextRound() {
+  // Сохраняем прогнозы текущего раунда
+  allPredictions.push(...roundPredictions);
+  roundPredictions = [];
+  currentRound++;
+  currentHorizonIdx = 0;
+  phase = "predicting";
 
-    function updateScrollFromSlider() {
-      const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
-      const ratio = slider.value / 100;
-      wrapper.scrollLeft = maxScroll * ratio;
-    }
+  const old = document.getElementById("nextBtn");
+  if (old) old.remove();
 
-    slider.addEventListener("input", updateScrollFromSlider);
-    wrapper.addEventListener("scroll", updateSliderFromScroll);
+  updateProgress();
+  drawSeries();
+  statusDiv.textContent = `Раунд ${currentRound+1}. Кликни в зелёной полосе для h=${currentHorizon()}.`;
+}
 
-    // Чуть сдвигаем вправо при старте, чтобы было видно, что график длинный
-    setTimeout(() => {
-      slider.value = 100;
-      updateScrollFromSlider();
-    }, 300);
+/***  ОТПРАВКА  ***/
+sendBtn.addEventListener("click", function() {
+  // Включаем прогнозы последнего раунда
+  const finalPreds = [...allPredictions, ...roundPredictions];
 
-    /********************************************************************
-     *           6. ПЛАВНОЕ ДВИЖЕНИЕ ПУНКТИРНОЙ ЛИНИИ (АНИМАЦИЯ)
-     ********************************************************************/
+  if (finalPreds.length < TOTAL_ROUNDS * HORIZONS.length) {
+    statusDiv.textContent = "Сначала заверши все раунды.";
+    return;
+  }
 
-    /**
-     * Плавно двигаем вертикальную линию с позиции fromX в позицию toX.
-     * durationMs — длительность анимации (например, 250 мс).
-     * onComplete — функция, которую вызываем после завершения (обновление текста и т.п.).
-     */
-    function animateLine(fromX, toX, durationMs, onComplete) {
-      const startTime = performance.now();
+  const payload = {
+    phi,
+    base_n: BASE_N,
+    total_rounds: TOTAL_ROUNDS,
+    horizons: HORIZONS,
+    predictions: finalPreds
+  };
 
-      function frame(now) {
-        const elapsed = now - startTime;
-        const progress = Math.min(1, elapsed / durationMs);  // от 0 до 1
+  Telegram.WebApp.sendData(JSON.stringify(payload));
+});
 
-        // Линейная интерполяция между fromX и toX
-        currentLineX = fromX + (toX - fromX) * progress;
-
-        drawSeries(); // перерисовываем график на каждом кадре
-
-        if (progress < 1) {
-          requestAnimationFrame(frame);
-        } else {
-          currentLineX = toX;
-          drawSeries(); // финальный кадр
-          if (onComplete) onComplete();
-        }
-      }
-
-      requestAnimationFrame(frame);
-    }
-
-    /********************************************************************
-     *                 7. ОБРАБОТКА КЛИКА ПО ГРАФИКУ
-     ********************************************************************/
-
-
-    canvas.addEventListener("click", function (evt) {
-      // Если все прогнозы уже сделаны — клики больше не обрабатываем
-      if (currentStep >= EXTRA_STEPS) {
-        statusDiv.textContent = "Все 10 прогнозов уже сделаны. Нажми «Отправить результаты».";
-        return;
-      }
-
-      // Координаты клика в системе canvas
-      const rect = canvas.getBoundingClientRect();
-      const x = evt.clientX - rect.left;
-      const y = evt.clientY - rect.top;
-
-      // Текущий индекс времени, за который делаем прогноз (строго один шаг вперёд)
-      const targetIndex = (BASE_N - 1) + (currentStep + 1) * STEP_SIZE;
-      const xTarget = xCoord(targetIndex);
-
-      const zoneWidth = 60;                // ширина кликабельной зоны
-      const halfZone = zoneWidth / 2;
-
-      // Проверяем, что клик произошёл в подсвеченной полосе вокруг линии
-      if (x < xTarget - halfZone || x > xTarget + halfZone) {
-        statusDiv.textContent = "Пожалуйста, кликни в зелёной полосе вокруг пунктирной линии (выбираем только высоту точки).";
-        return;
-      }
-
-      // Переводим координату Y клика в значение ряда (прогноз студента)
-      const yPred = invYScale(y);
-      const yTrue = data[targetIndex];
-
-      // Для "рост/падение" сравниваем с предыдущей открытой точкой
-      const prevIndex = Math.max(0, targetIndex - 1);
-      const up = yPred > data[prevIndex];
-
-      // Обновляем "открытую" реальность: теперь студент видит реальные данные до targetIndex
-      const oldMaxRealIndex = maxRealIndex;
-      maxRealIndex = targetIndex;
-
-      // Сохраняем прогноз
-      predictions.push({
-        step: currentStep,
-        t: targetIndex,
-        y_pred: yPred,
-        y_true: yTrue,
-        up: up
-      });
-
-      currentStep += 1;
-
-      // Позиция линии ДО и ПОСЛЕ (идём всегда на один шаг вправо)
-      const fromX = (currentLineX !== null) ? currentLineX : xCoord(oldMaxRealIndex + 1);
-      const toX = xCoord((BASE_N - 1) + (currentStep + 1) * STEP_SIZE);
-       
-
-      // Функция, которая обновит текстовое описание после анимации
-      const nextStepText = () => {
-        if (currentStep < EXTRA_STEPS) {
-          statusDiv.textContent =
-            `Прогноз ${currentStep} сделан. Сейчас t = ${targetIndex}, ` +
-            `твой y ≈ ${yPred.toFixed(2)}, истинное y ≈ ${yTrue.toFixed(2)}. ` +
-            `Сделай прогноз ${currentStep + 1} из ${EXTRA_STEPS} (верх/низ в следующей зелёной полосе).`;
-        } else {
-          // После последнего прогноза открываем весь ряд до конца
-          maxRealIndex = TOTAL_N - 1;
-          drawSeries();
-          statusDiv.textContent =
-            `Все ${EXTRA_STEPS} прогнозов сделаны. Последняя точка: t = ${targetIndex}, ` +
-            `твой y ≈ ${yPred.toFixed(2)}, истинное y ≈ ${yTrue.toFixed(2)}. ` +
-            `Теперь нажми «Отправить результаты».`;
-          sendBtn.disabled = false;
-          sendBtn.classList.add("enabled");
-        }
-      };
-
-      // Запускаем анимацию движения линии
-      animateLine(fromX, toX, 250, nextStepText);
-    });
-
-    /********************************************************************
-     *                 8. ОТПРАВКА РЕЗУЛЬТАТОВ В БОТА
-     ********************************************************************/
-
-    sendBtn.addEventListener("click", function () {
-      if (predictions.length < EXTRA_STEPS) {
-        statusDiv.textContent = "Сначала сделай все 10 прогнозов, потом отправляй результаты.";
-        return;
-      }
-
-      // Формируем payload — здесь можно хранить ВСЕ, что нужно для анализа:
-      // phi, длину ряда, все прогнозы с истинными значениями и флагом "рост/падение".
-      const payload = {
-        phi: phi,
-        base_n: BASE_N,
-        extra_steps: EXTRA_STEPS,
-        step_size: STEP_SIZE,
-        predictions: predictions
-      };
-
-      // Отправляем JSON в Python-бота (message.web_app_data.data)
-      Telegram.WebApp.sendData(JSON.stringify(payload));
-      // После этого мини-апп закроется по правилам Telegram.
-    });
-  </script>
-
-
-
-  
-
+updateProgress();
+</script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
