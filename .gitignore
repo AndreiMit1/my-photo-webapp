@@ -1,2 +1,16 @@
+# Databases / local state
+*.db
+**/*.db
+
+# Python venv
 .venv/
-venv/
+**/.venv/
+
+# Python cache
+__pycache__/
+**/__pycache__/
+
+# Node
+node_modules/
+new_ui/.next/
+new_ui/out/
