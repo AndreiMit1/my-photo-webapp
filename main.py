@@ -18,6 +18,10 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 
+import socket
+import aiohttp
+from aiogram.client.session.aiohttp import AiohttpSession
+
 from aiogram.types import ReplyKeyboardRemove
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.exceptions import TelegramBadRequest
@@ -71,9 +75,10 @@ def start_cloudflared_and_get_url(local_url: str = "http://127.0.0.1:3000") -> s
 
 
 # OTP service (локально)
+# OTP service (локально)
 OTP_SERVICE_BASE = "http://127.0.0.1:8001"
 
-bot = Bot(token=API_TOKEN)
+bot = None
 dp = Dispatcher()
 
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
@@ -847,17 +852,26 @@ async def handle_nickname(message: types.Message, state: FSMContext):
 #   ЗАПУСК БОТА
 # =========================
 async def main():
-    global BASE_WEBAPP_URL
+    global BASE_WEBAPP_URL, bot
 
     print("Бот запустился...")
     init_db()
 
-    # Поднимаем trycloudflare на локальный фронт (Next.js должен быть на localhost:3000)
-    BASE_WEBAPP_URL = start_cloudflared_and_get_url("http://127.0.0.1:3000")
+    BASE_WEBAPP_URL = "https://wicked-chicken-stick.loca.lt"
     print("PUBLIC WEBAPP URL:", BASE_WEBAPP_URL)
 
-    await bot.delete_webhook(drop_pending_updates=True)
-    await dp.start_polling(bot)
+    session = AiohttpSession(timeout=60)
+    bot = Bot(token=API_TOKEN, session=session)
+
+    try:
+        await bot.delete_webhook(drop_pending_updates=True)
+    except Exception as e:
+        print("delete_webhook failed:", e)
+
+    try:
+        await dp.start_polling(bot)
+    except Exception as e:
+        print("start_polling failed:", e)
 
 if __name__ == "__main__":
     asyncio.run(main())

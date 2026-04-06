@@ -9,16 +9,19 @@ export async function GET() {
   const rows = await db.all(`
     SELECT
       u.org_cluster_id as id,
-      u.org_norm as label,
-      COUNT(DISTINCT u.user_id) as usersCount,
-      MAX(s.total_score) as bestTotalScore
+      MIN(COALESCE(NULLIF(u.org_raw, ''), u.org_norm, 'Без названия')) as label,
+      COUNT(DISTINCT u.user_id) as usersCount
     FROM submissions s
     JOIN users u ON u.user_id = s.user_id
-    WHERE u.org_cluster_id IS NOT NULL
-    GROUP BY u.org_cluster_id, u.org_norm
-    ORDER BY usersCount DESC, bestTotalScore DESC
+    WHERE u.wants_leaderboard = 1
+      AND u.participant_id IS NOT NULL
+      AND u.org_cluster_id IS NOT NULL
+    GROUP BY u.org_cluster_id
+    ORDER BY usersCount DESC, label ASC
     LIMIT 200
   `);
+
+  await db.close();
 
   return NextResponse.json({ items: rows });
 }

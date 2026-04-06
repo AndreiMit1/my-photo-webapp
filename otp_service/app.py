@@ -9,6 +9,8 @@ from email.message import EmailMessage
 
 import aiosmtplib
 from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from dotenv import load_dotenv
@@ -56,7 +58,7 @@ def init_db():
 
         cur.execute("""
             CREATE TABLE IF NOT EXISTS used_emails (
-                email   TEXT PRIMARY KEY,
+                email TEXT PRIMARY KEY,
                 used_at INTEGER NOT NULL
             )
         """)
@@ -161,6 +163,16 @@ async def send_email(to_email: str, code: str):
 #   API
 # =========================
 app = FastAPI(title="Email OTP Service")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class OtpRequest(BaseModel):
     user_id: int
@@ -172,9 +184,8 @@ class OtpVerify(BaseModel):
     code: str
 
 @app.on_event("startup")
-def _startup():
+def on_startup():
     init_db()
-
 
 @app.post("/otp/request")
 async def otp_request(body: OtpRequest):
@@ -203,7 +214,10 @@ async def otp_request(body: OtpRequest):
     try:
         await send_email(email, code)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to send email: {type(e).__name__}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to send email: {type(e).__name__}: {str(e)}"
+        )
 
     return {"ok": True, "expires_in": OTP_TTL_SECONDS}
 

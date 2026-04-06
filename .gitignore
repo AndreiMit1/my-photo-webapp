@@ -2,15 +2,41 @@
 *.db
 **/*.db
 
-# Python venv
+# Env files
+.env
+.env.*
+!.env.example
+new_ui/.env.local
+backend/.env
+
+# Python virtual environments
 .venv/
 **/.venv/
+venv/
+**/venv/
 
 # Python cache
 __pycache__/
 **/__pycache__/
+*.pyc
 
 # Node
 node_modules/
-new_ui/.next/
-new_ui/out/
+**/node_modules/
+
+# Next.js
+.next/
+**/.next/
+out/
+**/out/
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

@@ -1,15 +1,11 @@
 import type { Metadata, Viewport } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import Script from 'next/script'
 import './globals.css'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
-
 export const metadata: Metadata = {
-  title: 'AR(1) Forecast Game',
-  description: 'Test your time-series prediction skills in this interactive AR(1) forecasting challenge.',
+  title: 'Эксперимент',
+  description: 'Test your time-series prediction skills in this interactive forecasting challenge.',
   generator: 'v0.app',
   icons: {
     icon: [

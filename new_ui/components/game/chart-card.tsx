@@ -178,17 +178,7 @@ export function ChartCard({
         </div>
       )}
 
-      {/* Scrubber */}
-      <div className="px-4 py-2.5 border-t border-border/30">
-        <Slider
-          value={[scrollPosition]}
-          onValueChange={handleSliderChange}
-          min={0}
-          max={100}
-          step={1}
-          className="w-full [&_[data-slot=slider-track]]:h-1 [&_[data-slot=slider-thumb]]:size-3 [&_[data-slot=slider-thumb]]:border-primary [&_[data-slot=slider-range]]:bg-primary/60"
-        />
-      </div>
+
     </div>
   );
 }

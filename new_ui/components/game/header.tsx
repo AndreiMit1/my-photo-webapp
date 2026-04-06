@@ -15,11 +15,8 @@ export function Header({ phi, isFullscreen, onToggleFullscreen }: HeaderProps) {
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex flex-col gap-0.5 min-w-0">
           <h1 className="text-base font-semibold text-foreground tracking-tight leading-tight">
-            AR(1) Forecast Game
+            Forecast Game
           </h1>
-          <span className="text-xs font-mono text-muted-foreground">
-            {"φ = "}{phi.toFixed(2)}
-          </span>
         </div>
         <div className="flex items-center gap-1.5">
           <Button
